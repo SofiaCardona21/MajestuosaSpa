@@ -2,6 +2,9 @@ package com.example.Model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +13,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class Cliente {
 
     @Id
@@ -22,9 +26,5 @@ public class Cliente {
     private int puntos;
 
     private boolean bonosDisponibles;
-
-
-
-
 
 }
