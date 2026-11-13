@@ -11,6 +11,7 @@ import com.example.Repository.ClienteRepository;
 import com.example.Repository.PersonalRepository;
 import com.example.Repository.ServicioRepository;
 import com.example.Service.TablaUsuariosService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Component//Crea un objeto de esa clase
 public class DatosIniciales implements CommandLineRunner { //Busca un metodo run para ejecutarlo al final del arranque
 
@@ -42,19 +44,19 @@ public class DatosIniciales implements CommandLineRunner { //Busca un metodo run
     @Override
     public void run(String... args) {//Métedo que busca el commandLine
 
-        crearPersonal("0000000001", "Administrador", "adminmajestuosa123", Rol.ADMIN, LocalTime.of(10, 0), LocalTime.of(20, 0) );
-        crearPersonal("0000000027", "Angélica", "angie1234", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(20, 0) );
-        crearPersonal("0000000067", "Sofia", "sofialapro67", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(20, 0) );
-        crearPersonal("0000000019", "Jesús", "jesusmajestuosa", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(20, 0) );
-        crearPersonal("0000000047", "Verónica", "vero0489", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(20, 0) );
-        crearPersonal("0000000084", "Paulina", "pau2456", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(20, 0) );
+        crearPersonal("0000000001", "Administrador", "adminmajestuosa123", Rol.ADMIN, LocalTime.of(10, 0), LocalTime.of(21, 0) );
+        crearPersonal("0000000027", "Angélica", "angie1234", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(21, 0) );
+        crearPersonal("0000000067", "Sofia", "sofialapro67", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(21, 0) );
+        crearPersonal("0000000019", "Jesús", "jesusmajestuosa", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(21, 0) );
+        crearPersonal("0000000047", "Verónica", "vero0489", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(21, 0) );
+        crearPersonal("0000000084", "Paulina", "pau2456", Rol.MANICURISTA, LocalTime.of(10, 0), LocalTime.of(21, 0) );
 
         crearServicio("SRV01", "Manicure tradicional", 60, 32000);
         crearServicio("SRV02", "Pedicure tradicional", 60, 35000);
         crearServicio("SRV03", "Manicure semipermanente Mujer", 90, 55000);
         crearServicio("SRV04", "Pedicure semipermanente Mujer", 90, 60000);
-        crearServicio("SRV05", "Manicure/ Pedicure semipermanente Hombre", 120, 35000);
-        crearServicio("SRV06", "Acrílicas ", 120, 150000);
+        crearServicio("SRV05", "Manicure/ Pedicure semipermanente Hombre", 60, 35000);
+        crearServicio("SRV06", "Acrílicas", 120, 150000);
         crearServicio("SRV07", "Press On", 120, 150000);
 
         for (Personal personalPrecargado : personalRepository.findAll()) {  //recorremos todos los datos precargados y los añadimos a la tabla
@@ -64,6 +66,8 @@ public class DatosIniciales implements CommandLineRunner { //Busca un metodo run
         for (Cliente clienteYaRegistrado : clienteRepository.findAll()) {  //este for es pq cuando se registran clientes quedan en la BD
             tablasUsuarios.agregarCliente(clienteYaRegistrado);            //Pero los datos en el hash map se van borrando ent siempre se necesitan cargarlos al inciar el programa
         }
+
+        log.info("“Conexión con la base de datos establecida: 7 servicios y 5 usuarios del personal cargados”");
 
     }
 

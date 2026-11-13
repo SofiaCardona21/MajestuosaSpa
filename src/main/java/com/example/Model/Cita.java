@@ -15,7 +15,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Cita {
+public class Cita implements Comparable<Cita> { //Para implementar el compareTo
 
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY) //para asignar automáticamente a cada cita(contador de la tabla)
@@ -42,6 +42,17 @@ public class Cita {
     private double valorTotal;
 
     private boolean bonoAplicado;
+
+
+    @Override
+    public int compareTo(Cita otra) { //Para para comparar la insancia completa de cita
+
+        int resultado = 0;
+
+        resultado = horaInicio.compareTo(otra.horaInicio); //definimos que la prioridad es horaInicio
+
+        return resultado;
+    }
 
 
 }
