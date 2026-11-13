@@ -24,15 +24,16 @@ public class DisponibilidadService {
     private final CitaRepository citaRepository;
     private final PersonalRepository personalRepository;
     private final ServicioRepository servicioRepository;
+    private final TurnoService turnoService;
 
     private static final LocalTime ENTRADA = LocalTime.of(10, 0);
     private static final LocalTime SALIDA = LocalTime.of(21, 0);
 
-
-    public DisponibilidadService(CitaRepository citaRepository, PersonalRepository personalRepository, ServicioRepository servicioRepository) {
+    public DisponibilidadService(CitaRepository citaRepository, PersonalRepository personalRepository, ServicioRepository servicioRepository, TurnoService turnoService) {
         this.citaRepository = citaRepository;
         this.personalRepository = personalRepository;
         this.servicioRepository = servicioRepository;
+        this.turnoService = turnoService;
     }
 
     public List<LocalTime> calcularHorasDisponible(List<Cita> citasDia,
@@ -167,6 +168,8 @@ public class DisponibilidadService {
 
         }
 
+        List<String> enCola = turnoService.idsEnCola(); // para ver quienes ya llegaron hoy y se registraron
+
         while (!recorrerDia.plusMinutes(duracion).isAfter(SALIDA)) {
 
             if (!(fechaSolicitada.equals(LocalDate.now()) && recorrerDia.isBefore(LocalTime.now()))){
@@ -182,15 +185,19 @@ public class DisponibilidadService {
                     }
                 }
 
-                if (! ManicuristasLibres.isEmpty()) {
-                    disponibilidadRespuesta.add(new HorarioDisponibleResponse(recorrerDia, ManicuristasLibres));
+                // "cualquiera" aparece si en la cola hay alguna libre
+                boolean cualquiera = false;
+                for (ManicuristaResponse libre : ManicuristasLibres) {
+                    if (enCola.contains(libre.idManicurista())) {
+                        cualquiera = true;
+                    }
                 }
+
+                disponibilidadRespuesta.add(new HorarioDisponibleResponse(recorrerDia, ManicuristasLibres, cualquiera));
             }
             recorrerDia = recorrerDia.plusMinutes(30);
 
         }
-
-
 
         long endTime = System.nanoTime();
         long tiempoEjecucion = endTime - startTime;
@@ -201,5 +208,25 @@ public class DisponibilidadService {
 
     }
 
+    // devulve los ids de la manicurista que pueda atender el servicio en esa hora y fecha según la duración del servicio
+    public List<String> manicuristasLibresA(LocalDate fecha, LocalTime hora, int duracion) {
 
+        List<String> libres = new ArrayList<>();
+
+        for (Personal manicurista : personalRepository.findByRol(Rol.MANICURISTA)) {
+
+            // miramos que espacios tiene ocupados con citas ese dia
+            List<Cita> citasDia = citaRepository.findByManicuristaIdPersonalAndFecha(manicurista.getIdPersonal(), fecha);
+
+            // miramos que espacios libres tiene
+            List<LocalTime> horasLibres = calcularHorasDisponible(citasDia, ENTRADA, SALIDA, duracion);
+
+            // si esta libre la agg a la lista
+            if (horasLibres.contains(hora)) {
+                libres.add(manicurista.getIdPersonal());
+            }
+        }
+
+        return libres;
+    }
 }

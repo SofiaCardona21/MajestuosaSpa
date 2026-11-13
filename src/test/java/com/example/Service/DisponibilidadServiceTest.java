@@ -20,7 +20,7 @@ class DisponibilidadServiceTest {
     void preparar() {
         // Cuando DisponibilidadService reciba repositories en el constructor (paso 5),
         // cambiar por: new DisponibilidadService(null, null, null)
-        servicio = new DisponibilidadService(null, null, null);
+        servicio = new DisponibilidadService(null, null, null, null);
     }
 
     // Crea una cita de prueba solo con hora de inicio y de fin

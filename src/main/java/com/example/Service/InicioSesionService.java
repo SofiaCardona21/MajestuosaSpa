@@ -11,12 +11,12 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class InicioSesionServices {
+public class InicioSesionService {
 
     private final TablaUsuariosService mapaConsultarUsuarios;
     private final BCryptPasswordEncoder encoder;
 
-    public InicioSesionServices(TablaUsuariosService mapaConsultarUsuarios, BCryptPasswordEncoder encoder) {
+    public InicioSesionService(TablaUsuariosService mapaConsultarUsuarios, BCryptPasswordEncoder encoder) {
         this.mapaConsultarUsuarios = mapaConsultarUsuarios;
         this.encoder = encoder;
     }

@@ -20,41 +20,29 @@ public class CitaService {
     private final CitaRepository citaRepository;
     private final DisponibilidadService disponibilidadService;
     private final TablaUsuariosService tablaUsuarios;
+    private final TurnoService turnoService;
 
-    public CitaService(CitaRepository citaRepository, DisponibilidadService disponibilidadService, TablaUsuariosService tablaUsuarios) {
+    public CitaService(CitaRepository citaRepository, DisponibilidadService disponibilidadService, TablaUsuariosService tablaUsuarios, TurnoService turnoService) {
         this.citaRepository = citaRepository;
         this.disponibilidadService = disponibilidadService;
         this.tablaUsuarios = tablaUsuarios;
+        this.turnoService = turnoService;
     }
 
     public CitaResponse agendar (CitaRequest datosCita){
 
         List<Servicio> serviciosTomados = new ArrayList<>();
-
         int duracion = 0;
-
         LocalTime horaFin ;
-
         Cita cita = new Cita();
-
         double valor = 0;
-
-
 
         //VALIDACIONES PARA AGENDAR
         Cliente cliente = tablaUsuarios.buscarCliente(datosCita.celularCliente());
 
-
         if (cliente == null) {
             log.warn("Cita rechazada: la clienta no existe");
             throw new LogicaNegocioException("La clienta no existe");
-        }
-
-        Personal manicurista = tablaUsuarios.buscarPersonal(datosCita.idManicurista());
-
-        if (manicurista == null) {
-            log.warn("Cita rechazada: la manicurista no existe");
-            throw new LogicaNegocioException("La manicurista no existe");
         }
 
         if (datosCita.fecha().isBefore(LocalDate.now())) {
@@ -62,17 +50,33 @@ public class CitaService {
             throw new LogicaNegocioException("La fecha ya pasó");
         }
 
-        // 4. servicios = disponibilidadService.armarServicios(...)
+        if (datosCita.fecha().equals(LocalDate.now()) && datosCita.horaInicio().isBefore(LocalTime.now())) {
+            log.warn("Cita rechazada: la hora de hoy ya pasó");
+            throw new LogicaNegocioException("Esa hora ya pasó");
+        }
+
         serviciosTomados = disponibilidadService.armarServicios(datosCita.idsServicios());
+        duracion  = disponibilidadService.calcularDuracionServicio(serviciosTomados);
 
-         duracion  = disponibilidadService.calcularDuracionServicio(serviciosTomados);
+        String idElegida = datosCita.idManicurista();
 
+        // por si no se elije una, busca la primera en disponibles
+        if (idElegida == null || idElegida.isBlank()) {
+            List<String> libres = disponibilidadService.manicuristasLibresA(datosCita.fecha(), datosCita.horaInicio(), duracion);
+            idElegida = turnoService.asignarCualquiera(libres);
+        }
 
-         valor     = calcularValor(serviciosTomados);
+        Personal manicurista = tablaUsuarios.buscarPersonal(idElegida);
 
+        if (manicurista == null || manicurista.getRol() != Rol.MANICURISTA) {
+            log.warn("Cita rechazada: la manicurista no existe");
+            throw new LogicaNegocioException("La manicurista no existe");
+        }
+
+        valor = calcularValor(serviciosTomados);
         horaFin   = datosCita.horaInicio().plusMinutes(duracion);
 
-        // 8. Volver a revisar que la hora siga libre
+        // volver a revisar que la hora siga libre. Para evitar errores si dos piden al mismo tiempo
         List<Cita> citasDia = citaRepository.findByManicuristaIdPersonalAndFecha(
                 manicurista.getIdPersonal(), datosCita.fecha());
 
@@ -83,11 +87,6 @@ public class CitaService {
             log.warn("Horario rechazado: {} a las {} ya no está disponible para {}",
                     datosCita.fecha(), datosCita.horaInicio(), manicurista.getIdPersonal());
             throw new LogicaNegocioException("El horario ya no está disponible");
-        }
-
-        if (datosCita.fecha().equals(LocalDate.now()) && datosCita.horaInicio().isBefore(LocalTime.now())) {
-            log.warn("Cita rechazada: la hora de hoy ya pasó");
-            throw new LogicaNegocioException("Esa hora ya pasó");
         }
 
         cita.setFecha(datosCita.fecha());
@@ -101,13 +100,11 @@ public class CitaService {
 
         Cita citaGuardada = citaRepository.save(cita);
 
-        // 11. Log de comportamiento
         log.info("Cita agendada");
 
-
-        // 12. Devolver la respuesta para la página
         return convertirAResponse(citaGuardada);
     }
+
 
     private double calcularValor(List<Servicio> serviciosTomados) {
 

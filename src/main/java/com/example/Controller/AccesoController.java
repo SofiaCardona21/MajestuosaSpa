@@ -4,7 +4,7 @@ import com.example.Dto.ClienteResponse;
 import com.example.Dto.InicioSesionRequest;
 import com.example.Dto.InicioSesionResponse;
 import com.example.Dto.RegistroRequest;
-import com.example.Service.InicioSesionServices;
+import com.example.Service.InicioSesionService;
 import com.example.Service.RegistroService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,9 +31,9 @@ public class AccesoController {
 
     //acá se ponen los services que son usados en el controller
     private final RegistroService registroService;
-    private final InicioSesionServices inicioSesionService;
+    private final InicioSesionService inicioSesionService;
 
-    public AccesoController(RegistroService registroService, InicioSesionServices inicioSesionService) {
+    public AccesoController(RegistroService registroService, InicioSesionService inicioSesionService) {
         this.registroService = registroService;
         this.inicioSesionService = inicioSesionService;
     }

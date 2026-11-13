@@ -24,6 +24,4 @@ public record CitaRequest(@NotBlank(message = "El celular del cliente es obligat
                           List<String> idsServicios,
 
                           String idManicurista) {
-
-
 }
