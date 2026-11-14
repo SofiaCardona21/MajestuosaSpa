@@ -40,6 +40,5 @@ public class RegistroService {
 
         log.info("Registro exitoso: se ha registrado un cliente con id: " + clienteARegistrar.getNumeroTel());// log para informar q ya se resgitro
 
-        return new ClienteResponse(clienteARegistrar.getNumeroTel(), clienteARegistrar.getNombre(), 0, false);
-    }
+        return new ClienteResponse(clienteARegistrar.getNumeroTel(), clienteARegistrar.getNombre(), 0, FidelidadService.PUNTOS_PARA_BONO, 0);    }
 }

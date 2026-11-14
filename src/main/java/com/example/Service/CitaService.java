@@ -1,5 +1,6 @@
 package com.example.Service;
 
+import com.example.Dto.CambioEstadoRequest;
 import com.example.Dto.CitaRequest;
 import com.example.Dto.CitaResponse;
 import com.example.Errores.LogicaNegocioException;
@@ -13,6 +14,8 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.time.LocalDateTime;
+
 @Log4j2
 @Service
 public class CitaService {
@@ -21,12 +24,17 @@ public class CitaService {
     private final DisponibilidadService disponibilidadService;
     private final TablaUsuariosService tablaUsuarios;
     private final TurnoService turnoService;
+    private final FidelidadService fidelidadService;
 
-    public CitaService(CitaRepository citaRepository, DisponibilidadService disponibilidadService, TablaUsuariosService tablaUsuarios, TurnoService turnoService) {
+
+    public CitaService(CitaRepository citaRepository, DisponibilidadService disponibilidadService, TablaUsuariosService tablaUsuarios, TurnoService turnoService, FidelidadService fidelidadService) {
         this.citaRepository = citaRepository;
         this.disponibilidadService = disponibilidadService;
         this.tablaUsuarios = tablaUsuarios;
         this.turnoService = turnoService;
+        this.fidelidadService = fidelidadService;
+
+
     }
 
     public CitaResponse agendar (CitaRequest datosCita){
@@ -89,6 +97,13 @@ public class CitaService {
             throw new LogicaNegocioException("El horario ya no está disponible");
         }
 
+        // Fidelidad: si la clienta tiene un bono, se usa en esta cita y se descuenta del valor
+        boolean bonoAplicado = fidelidadService.usarBono(cliente);
+
+        if (bonoAplicado) {
+            valor = fidelidadService.valorConBono(valor);
+        }
+
         cita.setFecha(datosCita.fecha());
         cita.setHoraInicio(datosCita.horaInicio());
         cita.setHoraFin(horaFin);
@@ -97,6 +112,7 @@ public class CitaService {
         cita.setServicios(serviciosTomados);
         cita.setValorTotal(valor);
         cita.setEstado(EstadoCita.PENDIENTE);
+        cita.setBonoAplicado(bonoAplicado);
 
         Cita citaGuardada = citaRepository.save(cita);
 
@@ -117,7 +133,7 @@ public class CitaService {
         return valorTotal;
     }
 
-    private CitaResponse convertirAResponse(Cita cita) {
+    public CitaResponse convertirAResponse(Cita cita) {
 
         List<String> nombresServicios = new ArrayList<>();
 
@@ -134,7 +150,8 @@ public class CitaService {
                 cita.getCliente().getNombre(),
                 cita.getManicurista().getNombrePersonal(),
                 cita.getValorTotal(),
-                cita.getEstado().name()
+                cita.getEstado().name(),
+                cita.isBonoAplicado()
         );
     }
 
@@ -151,11 +168,72 @@ public class CitaService {
         return respuestaListaCitas;
     }
 
+    // Cambia el estado de una cita, revisando con la lógica del negocio
+    public CitaResponse cambiarEstado(Long idCita, CambioEstadoRequest datosEstado) {
 
+        //Buscar la cita en MySQL por su ID
+        Cita cita = citaRepository.findById(idCita)
+                .orElseThrow(() -> {
+                    log.warn("Cambio de estado rechazado: la cita no existe");
+                    return new LogicaNegocioException("La cita no existe");
+                });
+
+        EstadoCita estadoActual = cita.getEstado();
+        EstadoCita estadoNuevo = datosEstado.estado();
+        LocalDateTime ahora = LocalDateTime.now();
+
+        //Una cita pagada ya terminó, no hay más cambios
+        if (estadoActual == EstadoCita.PAGADA) {
+            log.warn("Cambio de estado rechazado: la cita ya está pagada");
+            throw new LogicaNegocioException("La cita ya está pagada");
+        }
+
+        //Tiene que haber un cambio
+        if (estadoNuevo == estadoActual) {
+            log.warn("Cambio de estado rechazado: la cita ya está en ese estado");
+            throw new LogicaNegocioException("La cita ya está en ese estado");
+        }
+
+        //No vuelve a pendiente
+        if (estadoNuevo == EstadoCita.PENDIENTE) {
+            log.warn("Cambio de estado rechazado: la cita no puede volver a pendiente");
+            throw new LogicaNegocioException("Una cita no puede volver a pendiente");
+        }
+
+        // Revisar que ya haya empezado la cita
+        LocalDateTime inicioCita = LocalDateTime.of(cita.getFecha(), cita.getHoraInicio());
+
+        if (ahora.isBefore(inicioCita)) {
+            log.warn("Cambio de estado rechazado: la cita no ha empezado");
+            throw new LogicaNegocioException("La cita no ha empezado");
+        }
+
+        //Cuando se paga, revisar si terminó antes de lo establecido
+        if (estadoNuevo == EstadoCita.PAGADA) {
+
+
+            LocalDateTime finCita = LocalDateTime.of(cita.getFecha(), cita.getHoraFin());
+
+            //La hora final es cuando se paga
+            if (ahora.isBefore(finCita)) {
+                LocalTime horaReal = ahora.toLocalTime().withSecond(0).withNano(0);
+
+                log.info("Cita pagada antes de tiempo, se libera el tiempo restante");
+
+                cita.setHoraFin(horaReal);
+            }
+
+            //PUNTOS DE FIDELIDAD
+            // Fidelidad: un punto por cada servicio de la cita
+            fidelidadService.sumarPuntos(cita.getCliente().getNumeroTel(), cita.getServicios().size());
+        }
+
+        //Cambiar el estado y guardar en BD
+        cita.setEstado(estadoNuevo);
+        Cita citaGuardada = citaRepository.save(cita);
+
+        log.info("Cita cambió de estado");
+
+        return convertirAResponse(citaGuardada);
+    }
 }
-
-
-
-
-
-

@@ -20,10 +20,7 @@ public interface CitaRepository extends JpaRepository <Cita, Long> {
 
     List <Cita> findByClienteNumeroTel(String numeroTel); //Las citas de una clienta
 
-
-
-
-
+    List <Cita> findByFecha(LocalDate fecha);
 
 }
 

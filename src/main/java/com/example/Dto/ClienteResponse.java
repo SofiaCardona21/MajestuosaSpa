@@ -1,5 +1,4 @@
 package com.example.Dto;
 
-public record ClienteResponse(String Id, String nombre, int puntos, boolean bonosDisponibles)
-{ }
+public record ClienteResponse(String numeroTel, String nombre, int puntos, int puntosParaBono, int bonosDisponibles) { }
 

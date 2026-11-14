@@ -12,5 +12,6 @@ public record CitaResponse (Long idCita,
                             String nombreCliente,
                             String nombreManicurista,
                             double valorTotal,
-                            String estado){
+                            String estado,
+                            boolean bonoAplicado){
 }
